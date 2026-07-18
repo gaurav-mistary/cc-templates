@@ -46,7 +46,7 @@ jobs:
           git commit -m "Auto-update lockfile in CI" || true
 
       - name: Run Cascade Merge
-        run: uv run cc-cli cascade
+        run: just cc cascade
 
       - name: Upload Merge Report
         uses: actions/upload-artifact@v4
