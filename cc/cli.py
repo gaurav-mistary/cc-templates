@@ -74,11 +74,16 @@ def init(
 
 @app.command()
 def create(
-    template: TemplateType = typer.Argument(
-        ..., help="The template type to initialize"
+    template: TemplateType = typer.Option(
+        ..., "--template", help="The template type to initialize"
+    ),
+    path: str = typer.Option(
+        ..., "--path", help="The output directory path for the generated project"
     ),
     pyv: str = typer.Option("3.12", "--pyv", help="Python version branch (e.g., 3.12)"),
-    repo_url: str = typer.Argument(
+    repo_url: str = typer.Option(
+        ...,
+        "--repo-url",
         envvar="FACTORY_URL",
         help="The template repository URL",
     ),
@@ -86,18 +91,17 @@ def create(
     """
     Initialize a new cookiecutter project from a specific enum template branch.
     """
-
     if (branch_path := MAP.get(template)) is None:
         raise typer.BadParameter(f"Invalid template type: {template}")
 
-    # Assuming your branch structure is 'py3.12/cli' based on earlier conversations
     branch_name = f"py{pyv}{branch_path}"
 
-    logger.info(f"Initializing cookiecutter from branch: {branch_name}")
+    logger.info(f"Initializing cookiecutter from branch: {branch_name} into {path}")
 
     try:
         subprocess.run(
-            ["cookiecutter", repo_url, "--checkout", branch_name], check=True
+            ["cookiecutter", repo_url, "--checkout", branch_name, "-o", path],
+            check=True,
         )
     except subprocess.CalledProcessError as e:
         logger.error(f"Error running cookiecutter: {e}")
