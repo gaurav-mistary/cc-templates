@@ -1,12 +1,12 @@
 name: Auto Cascade Merge
 
 on:
-  push:
-    branches-ignore:
-      - main
+  pull_request:
+    types: [closed]
 
 jobs:
   cascade:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: write 
@@ -15,6 +15,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.ref }}
 
       - name: Create Local Tracking Branches
         run: |
@@ -38,8 +39,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Ensure clean git state
+        run: |
+          uv sync
+          git add .
+          git commit -m "Auto-update lockfile in CI" || true
+
       - name: Run Cascade Merge
-        run: just cc cascade
+        run: uv run cc-cli cascade
 
       - name: Upload Merge Report
         uses: actions/upload-artifact@v4
