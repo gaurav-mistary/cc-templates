@@ -9,6 +9,7 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "tool>=0.8.0",
     "typer>=0.27.0",
+    "rust-just",
 ]
 
 [dependency-groups]

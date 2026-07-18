@@ -59,7 +59,7 @@ def init(
     if not branch_parts:
         branch_parts = ["main"]
 
-    branch_name = "/".join(branch_parts)
+    branch_name = "--".join(branch_parts)
     logger.info(f"Initializing cookiecutter from branch: {branch_name}")
 
     try:
