@@ -12,6 +12,6 @@ dependencies = []
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",
-    "just-rust",
+    "rust-just",
     "ty",
 ]
