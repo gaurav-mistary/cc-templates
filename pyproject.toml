@@ -11,6 +11,9 @@ dependencies = [
     "rust-just",
 ]
 
+[project.scripts]
+cc-cli = "cc.cli:main"
+
 [dependency-groups]
 dev = [
     "black>=26.5.1",
@@ -18,9 +21,6 @@ dev = [
     "pre-commit>=4.6.0",
     "ty>=0.0.61",
 ]
-
-[project.scripts]
-cc-cli = "cc.cli:main"
 
 [tool.isort]
 profile = "black"
