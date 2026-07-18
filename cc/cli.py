@@ -25,18 +25,21 @@ def cascade():
 @app.command()
 def init(
     pyv: Optional[str] = typer.Option(
-        None, "--pyv", help="Python version branch (e.g., 3.12)"
+        "py3.12", "--pyv", help="Python version branch (e.g., 3.12)"
     ),
-    script: bool = typer.Option(
-        False, "--script", help="Use the script package template"
-    ),
+    cli: bool = typer.Option(False, "--cli", help="Use the script package template"),
     scratch: bool = typer.Option(False, "--scratch", help="Use the scratch template"),
-    django: bool = typer.Option(False, "--django", help="Use the django template"),
-    webapp: bool = typer.Option(False, "--webapp", help="Use the webapp template"),
     repo_url: str = typer.Option(
-        "https://github.com/yourusername/your-repo",
+        ...,
         "--repo",
+        envvar="FACTORY_URL",
         help="The template repository URL",
+    ),
+    output_dir: str = typer.Option(
+        ...,
+        "--output-dir",
+        "-o",
+        help="Directory to output the generated project into",
     ),
 ):
     """
@@ -45,16 +48,12 @@ def init(
     branch_parts = []
 
     if pyv:
-        branch_parts.append(f"python{pyv}")
+        branch_parts.append(pyv)
 
-    if script:
-        branch_parts.append("script-package")
+    if cli:
+        branch_parts.append("cli")
     elif scratch:
         branch_parts.append("scratch")
-    elif django:
-        branch_parts.append("django")
-    elif webapp:
-        branch_parts.append("webapp")
 
     if not branch_parts:
         branch_parts = ["main"]
@@ -65,7 +64,15 @@ def init(
     try:
         # Run cookiecutter directly wrapping their command
         subprocess.run(
-            ["cookiecutter", repo_url, "--checkout", branch_name], check=True
+            [
+                "cookiecutter",
+                repo_url,
+                "--checkout",
+                branch_name,
+                "--output-dir",
+                output_dir,
+            ],
+            check=True,
         )
     except subprocess.CalledProcessError as e:
         logger.error(f"Error running cookiecutter: {e}")
