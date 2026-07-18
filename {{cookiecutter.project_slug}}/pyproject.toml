@@ -6,12 +6,19 @@ authors = [
     { name = "{{ cookiecutter.author_name }}" }
 ]
 requires-python = ">={{ cookiecutter.python_version }}"
-dependencies = []
+dependencies = [
+    "pendulum>=3.2.0",
+    "icecream>=2.2.0",
+    "typer>=0.27.0",
+    "loguru>=0.7.3",
+    "ipython>=9.15.0",
+    "python-dotenv>=1.2.2",
+]
 
 
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",
-    "just-rust",
+    "rust-just",
     "ty",
 ]
