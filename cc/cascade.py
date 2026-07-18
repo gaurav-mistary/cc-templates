@@ -19,14 +19,16 @@ def get_repo() -> Repo:
 
 def get_direct_children(repo: Repo, branch_name: str) -> list[str]:
     """Find direct child branches of a given branch name."""
-    base_depth = branch_name.count("/")
+    children = []
+
+    base_depth = branch_name.count("--")
     target_depth = base_depth + 1
 
-    children = []
     for head in repo.heads:
-        if head.name.startswith(f"{branch_name}/"):
-            if head.name.count("/") == target_depth:
+        if head.name.startswith(f"{branch_name}--"):
+            if head.name.count("--") == target_depth:
                 children.append(head.name)
+
     return children
 
 
