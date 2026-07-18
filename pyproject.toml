@@ -2,4 +2,23 @@
 name = "cc"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "cookiecutter>=2.7.1",
+    "gitpython>=3.1.52",
+    "loguru>=0.7.3",
+    "tool>=0.8.0",
+    "typer>=0.27.0",
+]
+
+[dependency-groups]
+dev = [
+    "black>=26.5.1",
+    "isort>=8.0.1",
+    "pre-commit>=4.6.0",
+]
+
+[project.scripts]
+cc-cli = "cc.cli:main"
+
+[tool.isort]
+profile = "black"
