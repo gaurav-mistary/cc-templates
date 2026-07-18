@@ -8,17 +8,19 @@ ARG BUILD=dev
 # STAGE 1: Builder
 # ==========================================
 FROM python:3.12-slim AS builder
-ARG BUILD
-
-# Install git (required by gitpython and cookiecutter)
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
-
 # The officially recommended way to install uv in Docker!
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Force uv to use the system python (from the python:3.12-slim image) 
-# instead of downloading a managed version, so the symlink survives the multi-stage copy!
+# Force uv to use system python so symlinks don't break in multi-stage builds
 ENV UV_PYTHON_PREFERENCE=system
+
+# Set env for uv
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV UV_PROJECT_ENVIRONMENT=/app/.venv
+
+# Install git (required by gitpython and cookiecutter)
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -58,7 +60,6 @@ RUN if [ "$BUILD" = "prod" ]; then \
 FROM python:3.12-slim
 
 # Cookiecutter and GitPython strictly require git at runtime
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -68,8 +69,6 @@ COPY --from=builder /app /app
 # Add the uv virtual environment to the system PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Tell Python where to find the "cc" source code directory
-ENV PYTHONPATH="/app"
 
 # Make the container behave natively
 ENTRYPOINT ["python",  "-m", "cc.cli"]
