@@ -21,25 +21,25 @@ def get_direct_children(repo: Repo, branch_name: str) -> list[str]:
     """Find direct child branches of a given branch name."""
     children = []
 
-    if branch_name.endswith("/scratch"):
+    if branch_name.endswith("--scratch"):
         # Scratch is the base template! Its "children" are actually its siblings.
-        # e.g., 'py3.12/scratch' is the parent of 'py3.12/cli'
-        parent_dir = branch_name[: -len("scratch")]  # e.g. 'py3.12/'
-        base_depth = branch_name.count("/")
+        # e.g., 'py3.12--scratch' is the parent of 'py3.12--cli'
+        parent_dir = branch_name[: -len("scratch")]  # e.g. 'py3.12--'
+        base_depth = branch_name.count("--")
 
         for head in repo.heads:
             if head.name.startswith(parent_dir) and head.name != branch_name:
-                # Siblings have the same slash depth as the scratch branch
-                if head.name.count("/") == base_depth:
+                # Siblings have the same depth as the scratch branch
+                if head.name.count("--") == base_depth:
                     children.append(head.name)
     else:
-        # Normal hierarchical children (e.g. py3.12/cli is parent of py3.12/cli/nested)
-        base_depth = branch_name.count("/")
+        # Normal hierarchical children (e.g. py3.12--cli is parent of py3.12--cli--nested)
+        base_depth = branch_name.count("--")
         target_depth = base_depth + 1
 
         for head in repo.heads:
-            if head.name.startswith(f"{branch_name}/"):
-                if head.name.count("/") == target_depth:
+            if head.name.startswith(f"{branch_name}--"):
+                if head.name.count("--") == target_depth:
                     children.append(head.name)
 
     return children
