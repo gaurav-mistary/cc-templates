@@ -106,7 +106,8 @@ def run_cascade_merge():
         "failed_merges": conflicts_list,
     }
 
-    report_filename = "cascade_report.json"
+    timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    report_filename = f"cascade_log_{timestamp_str}.json"
     with open(report_filename, "w") as f:
         json.dump(report, f, indent=4)
 
