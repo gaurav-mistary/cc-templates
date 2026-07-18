@@ -16,6 +16,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Create Local Tracking Branches
+        run: |
+          # The Python script iterates over local branches (repo.heads).
+          # In CI, we must convert remote branches to local tracking branches first!
+          for remote in $(git branch -r | grep -v '\->' | grep origin/); do
+            git branch --track "${remote#origin/}" "$remote" || true
+          done
+
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         
