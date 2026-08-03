@@ -57,7 +57,8 @@ def cascade_merge_recursive(
         try:
             repo.git.checkout(child)
             repo.git.merge(
-                current_branch, m=f"Auto-merge '{current_branch}' into '{child}'"
+                current_branch,
+                m=f"chore(auto): merge '{current_branch}' into '{child}'",
             )
             logger.success(f"Successfully merged '{current_branch}' into '{child}'.")
 
