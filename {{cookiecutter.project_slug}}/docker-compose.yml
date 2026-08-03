@@ -1,6 +1,6 @@
 services:
   dockhand:
-    image: fnsys/dockhand:latest
+    image: fnsys/dockhand:{{ cookiecutter.dockhand_version }}
     container_name: dockhand
     restart: unless-stopped
     ports:
@@ -9,11 +9,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - dockhand_data:/app/data
     networks:
-      - dockhand-net
+      - {{ cookiecutter.dockhand_network }}
 
 volumes:
   dockhand_data:
 
 networks:
-  dockhand-net:
+  {{ cookiecutter.dockhand_network }}:
     driver: bridge
