@@ -1,35 +1,25 @@
-# Custom Cookiecutter (CC) Templates Context
+# Custom Cookiecutter (CC) Architecture
 
-## Project Overview
-This repository contains a highly opinionated, hierarchical Cookiecutter templating system. The core concept is **branch-based template inheritance**. 
-Instead of keeping all templates in subdirectories on a single main branch, this project uses a Git branching hierarchy (e.g., `parent--child1--child2`). The `main` branch is reserved solely as the source for the `cc` plugin/CLI tool itself. Template bases exist as children of `main` (e.g., `py3.12`). A base change in a parent branch (like `py3.12`) automatically cascades down to all child branches (like `py3.12--script-package`), integrating changes while respecting custom modifications at the lower levels via intelligent Git merging. Changes in `main` cascade down to all root-level template branches.
+## Overview
+This repository (`cc`) is the engine for a highly opinionated, hierarchical Cookiecutter templating system based on **Git branch inheritance**.
 
-## Core Tooling: `cc-cli`
-The automation is handled by a custom Python CLI tool located in the `cc/` directory. It uses `typer` for the interface, `loguru` for verbose logging, and `GitPython` for git operations.
+### Core Concepts:
+1. **The CLI Engine**: The `main` branch contains `cc-cli`, a custom Python tool built with Typer to orchestrate Cookiecutter and Git.
+2. **The Base Templates**: Branches directly off `main` (e.g., `traefik`, `dockhand`, `py3.12`) contain base Cookiecutter template directories.
+3. **The Registry & Templates Repo**: To scale this, the actual combined templates are hosted in a separate repository (e.g. a fork called `cc-templates`). The `cc-cli` supports resolving friendly aliases to internal branches via a `registry.json` mapping (local or fetched from a URL).
+4. **The Cascade**: Updates made to `main` cascade down to base branches. Updates made to base branches cascade down to hybrid template branches.
 
-### Key Commands:
-1. **`cc-cli init`**: Wraps the standard `cookiecutter` CLI. It parses arguments (e.g., `--pyv 3.12 --script`) to dynamically construct the target branch name (e.g., `python3.12/script-package`) and initializes a project from that branch.
-2. **`cc-cli cascade`**: Executes the cascading merge logic.
-   - Starts at the current branch.
-   - Discovers all *direct* children by parsing branch names for a `--` hierarchy (or from `main` to any branches without `--`).
-   - Merges the parent into the child and pushes the child to `origin`.
-   - Recursively cascades down the tree if successful.
-   - Generates a JSON report (`cascade_log_YYYYMMDD_HHMMSS.json`) detailing successful and failed merges.
-   - **Conflict Handling**: If a merge conflict occurs, the script aborts the merge, logs the conflict, and intentionally **halts recursion for that specific descendant path**, but continues processing other sibling branches safely.
-
-## Automation & CI/CD
-- **GitHub Action (`cascade.yml`)**: On every PR merge, the Action checks out the repository (`fetch-depth: 0`) and runs `uv run cc-cli cascade`. It relies on the default `GITHUB_TOKEN` to push the merged branches back. It uploads the dynamically named JSON merge report as a GitHub artifact.
-  - **Skip Cascade**: You can optionally exclude a branch and its descendants from cascading by including `[skip cascade]` in the PR title or body.
-- **Pre-commit**: Installed locally. `black` and `isort` enforce perfectly formatted Python code on every commit.
+## The CLI Tool (`cc-cli`)
+The CLI orchestrates everything.
+- **`cc-cli template create <alias>`**: Reads a `registry.json` (from URL or `~/.cc-registry.json`), resolves the alias to a branch name, and runs `cookiecutter` against the templates repository.
+- **`cc-cli cascade`**: Analyzes the git tree. If `traefik` is updated, it automatically merges the new `traefik` into `traefik--secure` and `traefik--dockhand`.
 
 ## Task Runner (`just`)
-The repository uses `just` as an alias router.
-- The root `justfile` registers a module: `mod cc`.
-- `cc.just` contains aliases like `just cc cascade` or `just cc init-script` which expand to specific `uv run cc-cli` argument combinations.
+- **`just cc cascade`**: Triggers the cascade merge.
+- **`just tc <alias>`**: Fast wrappers for `cc-cli template create`. (e.g., `just tc secure-dockhand`). Defaults output to `~/projects/study`.
 
-## Typical Conflict Workflow
-If an automated cascade merge encounters a conflict (e.g., on `parent/level1`), the workflow is:
-1. The developer checks out `parent/level1`.
-2. The developer manually resolves the merge conflict with `parent`.
-3. The developer commits the fix and opens/merges a PR.
-4. The GitHub Action automatically runs against the newly updated `parent/level1` branch, and seamlessly resumes cascading the changes down to `parent/level1/level2`.
+## Workflow
+1. Develop base technologies in the `cc` repository (e.g. update Traefik to v4).
+2. Sync the `cc-templates` fork.
+3. Run `just cc cascade` in the fork to auto-merge Traefik v4 into all your hybrid branches.
+4. Users run `just tc <alias>` to scaffold projects.
