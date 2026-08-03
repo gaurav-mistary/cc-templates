@@ -2,5 +2,6 @@
     "project_name": "Traefik Setup",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "domain_name": "localhost",
-    "subdomain": "test"
+    "subdomain": "test",
+    "traefik_networks": "web"
 }

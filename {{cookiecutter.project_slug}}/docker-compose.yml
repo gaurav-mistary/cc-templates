@@ -15,7 +15,9 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
-      - proxy
+{%- for net in cookiecutter.traefik_networks.split(',') %}
+      - {{ net.strip() }}
+{%- endfor %}
 
   web:
     image: nginx:alpine
@@ -27,8 +29,10 @@ services:
       - "traefik.http.routers.web.rule=Host(`{{cookiecutter.subdomain}}.{{cookiecutter.domain_name}}`)"
       - "traefik.http.routers.web.entrypoints=web"
     networks:
-      - proxy
+      - {{ cookiecutter.traefik_networks.split(',')[0].strip() }}
 
 networks:
-  proxy:
-    name: proxy_network
+{%- for net in cookiecutter.traefik_networks.split(',') %}
+  {{ net.strip() }}:
+    name: {{ net.strip() }}_network
+{%- endfor %}
