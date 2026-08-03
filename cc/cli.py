@@ -1,3 +1,4 @@
+import os
 import subprocess
 from typing import Optional
 
@@ -12,6 +13,45 @@ from cc.map import MAP
 app = typer.Typer(help="Custom Cookiecutter CLI for managing hierarchical templates.")
 
 load_dotenv()
+
+
+def push_git(project_dir: str, push_url: str):
+    logger.info(f"Initializing Git repository in {project_dir}...")
+    try:
+        subprocess.run(
+            ["git", "init"], cwd=project_dir, check=True, capture_output=True
+        )
+        subprocess.run(
+            ["git", "branch", "-M", "main"],
+            cwd=project_dir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "add", "."], cwd=project_dir, check=True, capture_output=True
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit from cc template"],
+            cwd=project_dir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "remote", "add", "origin", push_url],
+            cwd=project_dir,
+            check=True,
+            capture_output=True,
+        )
+
+        logger.info(f"Pushing to {push_url}...")
+        subprocess.run(
+            ["git", "push", "-u", "origin", "main"], cwd=project_dir, check=True
+        )
+        logger.success(f"Successfully pushed to {push_url}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Git operation failed: {e}")
+        if e.stderr:
+            logger.error(e.stderr.decode("utf-8", errors="ignore"))
 
 
 @app.command()
@@ -41,6 +81,11 @@ def init(
         "-o",
         help="Directory to output the generated project into",
     ),
+    push_url: Optional[str] = typer.Option(
+        None,
+        "--push-url",
+        help="Optional Git remote URL to initialize and push the generated project to",
+    ),
 ):
     """
     Initialize a new cookiecutter project from a specific branch hierarchy.
@@ -62,6 +107,10 @@ def init(
     logger.info(f"Initializing cookiecutter from branch: {branch_name}")
 
     try:
+        before_dirs = (
+            set(os.listdir(output_dir)) if os.path.exists(output_dir) else set()
+        )
+
         # Run cookiecutter directly wrapping their command
         subprocess.run(
             [
@@ -74,6 +123,20 @@ def init(
             ],
             check=True,
         )
+
+        if push_url:
+            after_dirs = (
+                set(os.listdir(output_dir)) if os.path.exists(output_dir) else set()
+            )
+            new_dirs = list(after_dirs - before_dirs)
+            if len(new_dirs) == 1:
+                project_dir = os.path.join(output_dir, new_dirs[0])
+                push_git(project_dir, push_url)
+            else:
+                logger.error(
+                    "Could not determine the exact generated project directory to initialize Git."
+                )
+
     except subprocess.CalledProcessError as e:
         logger.error(f"Error running cookiecutter: {e}")
         raise typer.Exit(1)
@@ -94,6 +157,11 @@ def create(
         envvar="FACTORY_URL",
         help="The template repository URL",
     ),
+    push_url: Optional[str] = typer.Option(
+        None,
+        "--push-url",
+        help="Optional Git remote URL to initialize and push the generated project to",
+    ),
 ):
     """
     Initialize a new cookiecutter project from a specific enum template branch.
@@ -106,10 +174,24 @@ def create(
     logger.info(f"Initializing cookiecutter from branch: {branch_name} into {path}")
 
     try:
+        before_dirs = set(os.listdir(path)) if os.path.exists(path) else set()
+
         subprocess.run(
             ["cookiecutter", repo_url, "--checkout", branch_name, "-o", path],
             check=True,
         )
+
+        if push_url:
+            after_dirs = set(os.listdir(path)) if os.path.exists(path) else set()
+            new_dirs = list(after_dirs - before_dirs)
+            if len(new_dirs) == 1:
+                project_dir = os.path.join(path, new_dirs[0])
+                push_git(project_dir, push_url)
+            else:
+                logger.error(
+                    "Could not determine the exact generated project directory to initialize Git."
+                )
+
     except subprocess.CalledProcessError as e:
         logger.error(f"Error running cookiecutter: {e}")
         raise typer.Exit(1)
@@ -130,6 +212,11 @@ def mix(
         "--repo",
         envvar="FACTORY_URL",
         help="The template repository URL",
+    ),
+    push_url: Optional[str] = typer.Option(
+        None,
+        "--push-url",
+        help="Optional Git remote URL to initialize and push the generated project to",
     ),
 ):
     """
@@ -182,10 +269,27 @@ def mix(
 
             logger.info("Merge successful! Running cookiecutter...")
 
+            before_dirs = (
+                set(os.listdir(output_dir)) if os.path.exists(output_dir) else set()
+            )
+
             subprocess.run(
                 ["cookiecutter", temp_dir, "--output-dir", output_dir],
                 check=True,
             )
+
+            if push_url:
+                after_dirs = (
+                    set(os.listdir(output_dir)) if os.path.exists(output_dir) else set()
+                )
+                new_dirs = list(after_dirs - before_dirs)
+                if len(new_dirs) == 1:
+                    project_dir = os.path.join(output_dir, new_dirs[0])
+                    push_git(project_dir, push_url)
+                else:
+                    logger.error(
+                        "Could not determine the exact generated project directory to initialize Git."
+                    )
 
         except subprocess.CalledProcessError as e:
             logger.error(f"Error during mixing: {e}")
