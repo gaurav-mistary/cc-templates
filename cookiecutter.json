@@ -1,10 +1,12 @@
 {
-    "project_name": "Traefik Setup",
+    "project_name": "Traefik and Dockhand Setup",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "domain_name": "localhost",
-    "subdomain": "test",
-    "traefik_networks": "web",
+    "subdomain": "dockhand",
+    "traefik_networks": "web,dockhand-net",
     "dashboard_user": "admin",
     "dashboard_password": "YOUR_SUPER_SECRET_PASSWORD",
-    "acme_email": "admin@example.com"
+    "acme_email": "admin@example.com",
+    "dockhand_version": "latest",
+    "dockhand_network": "dockhand-net"
 }

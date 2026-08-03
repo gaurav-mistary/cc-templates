@@ -48,11 +48,32 @@ services:
     networks:
       - {{ cookiecutter.traefik_networks.split(',')[0].strip() }}
 
+  dockhand:
+    image: fnsys/dockhand:{{ cookiecutter.dockhand_version }}
+    container_name: dockhand
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - dockhand_data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dockhand.rule=Host(`dockhand.{{cookiecutter.domain_name}}`)"
+      - "traefik.http.routers.dockhand.entrypoints=websecure"
+      - "traefik.http.routers.dockhand.tls.certresolver=myresolver"
+      - "traefik.http.services.dockhand.loadbalancer.server.port=3000"
+    networks:
+      - {{ cookiecutter.dockhand_network }}
+
 volumes:
   traefik-certificates:
+  dockhand_data:
 
 networks:
 {%- for net in cookiecutter.traefik_networks.split(',') %}
   {{ net.strip() }}:
     name: {{ net.strip() }}_network
 {%- endfor %}
+  {{ cookiecutter.dockhand_network }}:
+    driver: bridge
