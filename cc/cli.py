@@ -251,7 +251,7 @@ def template_create(
         ..., help="The user-friendly alias (e.g., 'webserver') or exact branch name."
     ),
     repo_url: str = typer.Option(
-        "git@github.com-personal:gaurav-mistary/templates.git",
+        "git@github.com-personal:gaurav-mistary/cc-templates.git",
         "--repo",
         envvar="TEMPLATES_REPO_URL",
         help="The Git repository hosting the templates. Defaults to the user's templates fork.",
