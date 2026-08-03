@@ -7,8 +7,6 @@ from dotenv import load_dotenv
 from loguru import logger
 
 from cc.cascade import run_cascade_merge
-from cc.enums import TemplateType
-from cc.map import MAP
 
 app = typer.Typer(help="Custom Cookiecutter CLI for managing hierarchical templates.")
 
@@ -64,11 +62,12 @@ def cascade():
 
 @app.command()
 def init(
-    pyv: Optional[str] = typer.Option(
-        "py3.12", "--pyv", help="Python version branch (e.g., 3.12)"
+    template: str = typer.Argument(
+        "main", help="The template name (e.g., cli, traefik, py3.12--cli)"
     ),
-    cli: bool = typer.Option(False, "--cli", help="Use the script package template"),
-    scratch: bool = typer.Option(False, "--scratch", help="Use the scratch template"),
+    pyv: Optional[str] = typer.Option(
+        None, "--pyv", help="Python version branch prefix (e.g., 3.12)"
+    ),
     repo_url: str = typer.Option(
         ...,
         "--repo",
@@ -90,20 +89,16 @@ def init(
     """
     Initialize a new cookiecutter project from a specific branch hierarchy.
     """
-    branch_parts = []
-
     if pyv:
-        branch_parts.append(pyv)
+        # If the user provides a pyv and a template (not main), combine them.
+        # If template is main, just use py3.12 (as the base)
+        if template == "main":
+            branch_name = f"py{pyv}"
+        else:
+            branch_name = f"py{pyv}--{template}"
+    else:
+        branch_name = template
 
-    if cli:
-        branch_parts.append("cli")
-    elif scratch:
-        branch_parts.append("scratch")
-
-    if not branch_parts:
-        branch_parts = ["main"]
-
-    branch_name = "--".join(branch_parts)
     logger.info(f"Initializing cookiecutter from branch: {branch_name}")
 
     try:
@@ -131,61 +126,6 @@ def init(
             new_dirs = list(after_dirs - before_dirs)
             if len(new_dirs) == 1:
                 project_dir = os.path.join(output_dir, new_dirs[0])
-                push_git(project_dir, push_url)
-            else:
-                logger.error(
-                    "Could not determine the exact generated project directory to initialize Git."
-                )
-
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error running cookiecutter: {e}")
-        raise typer.Exit(1)
-
-
-@app.command()
-def create(
-    template: TemplateType = typer.Option(
-        ..., "--template", help="The template type to initialize"
-    ),
-    path: str = typer.Option(
-        ..., "--path", help="The output directory path for the generated project"
-    ),
-    pyv: str = typer.Option("3.12", "--pyv", help="Python version branch (e.g., 3.12)"),
-    repo_url: str = typer.Option(
-        ...,
-        "--repo-url",
-        envvar="FACTORY_URL",
-        help="The template repository URL",
-    ),
-    push_url: Optional[str] = typer.Option(
-        None,
-        "--push-url",
-        help="Optional Git remote URL to initialize and push the generated project to",
-    ),
-):
-    """
-    Initialize a new cookiecutter project from a specific enum template branch.
-    """
-    if (branch_path := MAP.get(template)) is None:
-        raise typer.BadParameter(f"Invalid template type: {template}")
-
-    branch_name = f"py{pyv}{branch_path}"
-
-    logger.info(f"Initializing cookiecutter from branch: {branch_name} into {path}")
-
-    try:
-        before_dirs = set(os.listdir(path)) if os.path.exists(path) else set()
-
-        subprocess.run(
-            ["cookiecutter", repo_url, "--checkout", branch_name, "-o", path],
-            check=True,
-        )
-
-        if push_url:
-            after_dirs = set(os.listdir(path)) if os.path.exists(path) else set()
-            new_dirs = list(after_dirs - before_dirs)
-            if len(new_dirs) == 1:
-                project_dir = os.path.join(path, new_dirs[0])
                 push_git(project_dir, push_url)
             else:
                 logger.error(
