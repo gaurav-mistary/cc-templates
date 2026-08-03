@@ -26,3 +26,4 @@ docker-run mount_path *args:
 
     # Run the container natively with SSH mounts
     docker run --rm -it $ENV_ARGS -v "$HOME/.ssh:/root/.ssh:ro" -v "$HOME/.gitconfig:/root/.gitconfig:ro" -v "$ABS_PATH:/output" -w /app cc:latest {{args}}
+mod tc
