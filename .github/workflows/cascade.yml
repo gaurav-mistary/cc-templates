@@ -6,7 +6,7 @@ on:
 
 jobs:
   cascade:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.title, '[skip cascade]') && !contains(github.event.pull_request.body, '[skip cascade]')
     runs-on: ubuntu-latest
     permissions:
       contents: write 
