@@ -5,15 +5,31 @@ services:
     image: traefik:v3.1
     container_name: traefik
     command:
-      - "--api.insecure=true"
+      - "--api.insecure=false"
+      - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email={{cookiecutter.acme_email}}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
-      - "8080:8080" # Dashboard, insecure for now
+      - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "traefik-certificates:/letsencrypt"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.{{cookiecutter.domain_name}}`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=auth"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
+      - "traefik.http.middlewares.auth.basicauth.users={{cookiecutter.dashboard_user}}:__DASHBOARD_PASSWORD_HASH__"
     networks:
 {%- for net in cookiecutter.traefik_networks.split(',') %}
       - {{ net.strip() }}
@@ -27,9 +43,13 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web.rule=Host(`{{cookiecutter.subdomain}}.{{cookiecutter.domain_name}}`)"
-      - "traefik.http.routers.web.entrypoints=web"
+      - "traefik.http.routers.web.entrypoints=websecure"
+      - "traefik.http.routers.web.tls.certresolver=myresolver"
     networks:
       - {{ cookiecutter.traefik_networks.split(',')[0].strip() }}
+
+volumes:
+  traefik-certificates:
 
 networks:
 {%- for net in cookiecutter.traefik_networks.split(',') %}

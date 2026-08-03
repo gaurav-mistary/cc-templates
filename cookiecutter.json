@@ -3,5 +3,8 @@
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
     "domain_name": "localhost",
     "subdomain": "test",
-    "traefik_networks": "web"
+    "traefik_networks": "web",
+    "dashboard_user": "admin",
+    "dashboard_password": "YOUR_SUPER_SECRET_PASSWORD",
+    "acme_email": "admin@example.com"
 }
