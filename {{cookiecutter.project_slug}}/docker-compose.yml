@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080" # Dashboard, insecure for now
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - proxy
+
+  web:
+    image: nginx:alpine
+    container_name: basic_webserver
+    volumes:
+      - "./html:/usr/share/nginx/html:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`{{cookiecutter.subdomain}}.{{cookiecutter.domain_name}}`)"
+      - "traefik.http.routers.web.entrypoints=web"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: proxy_network
