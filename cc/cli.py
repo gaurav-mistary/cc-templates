@@ -9,6 +9,10 @@ from loguru import logger
 from cc.cascade import run_cascade_merge
 
 app = typer.Typer(help="Custom Cookiecutter CLI for managing hierarchical templates.")
+template_app = typer.Typer(
+    help="Manage and generate projects from templates (e.g., from a templates fork)"
+)
+app.add_typer(template_app, name="template")
 
 load_dotenv()
 
@@ -239,6 +243,77 @@ def mix(
                 except AttributeError:
                     pass
             raise typer.Exit(1)
+
+
+@template_app.command("create")
+def template_create(
+    template_name: str = typer.Argument(
+        ..., help="The name of the template branch (e.g., traefik--dockhand)"
+    ),
+    repo_url: str = typer.Option(
+        "git@github.com-personal:gaurav-mistary/templates.git",
+        "--repo",
+        envvar="TEMPLATES_REPO_URL",
+        help="The Git repository hosting the templates. Defaults to the user's templates fork.",
+    ),
+    output_dir: str = typer.Option(
+        ...,
+        "--output-dir",
+        "-o",
+        help="Directory to output the generated project into",
+    ),
+    push_url: Optional[str] = typer.Option(
+        None,
+        "--push-url",
+        help="Optional Git remote URL to initialize and push the generated project to",
+    ),
+):
+    """
+    Generate a new project from a pre-mixed template branch.
+
+    EXPECTED TEMPLATE STRUCTURE:
+    - The repository (e.g. gaurav-mistary/templates) must contain Git branches representing templates.
+    - Each branch must contain a valid Cookiecutter template at its root (meaning a cookiecutter.json and a {{cookiecutter.project_slug}} directory).
+    - If the repository is a fork of 'cc', you can use `cc cascade` locally to auto-sync upstream base updates (like 'traefik' or 'dockhand') down into your mixed branches!
+    """
+    logger.info(
+        f"Creating project from template branch: {template_name} (Repo: {repo_url})"
+    )
+
+    try:
+        before_dirs = (
+            set(os.listdir(output_dir)) if os.path.exists(output_dir) else set()
+        )
+
+        # Run cookiecutter directly wrapping their command
+        subprocess.run(
+            [
+                "cookiecutter",
+                repo_url,
+                "--checkout",
+                template_name,
+                "--output-dir",
+                output_dir,
+            ],
+            check=True,
+        )
+
+        if push_url:
+            after_dirs = (
+                set(os.listdir(output_dir)) if os.path.exists(output_dir) else set()
+            )
+            new_dirs = list(after_dirs - before_dirs)
+            if len(new_dirs) == 1:
+                project_dir = os.path.join(output_dir, new_dirs[0])
+                push_git(project_dir, push_url)
+            else:
+                logger.error(
+                    "Could not determine the exact generated project directory to initialize Git."
+                )
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error running cookiecutter: {e}")
+        raise typer.Exit(1)
 
 
 def main():
