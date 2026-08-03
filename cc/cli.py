@@ -271,7 +271,7 @@ def template_create(
         "~/.cc-registry.json",
         "--registry",
         envvar="CC_REGISTRY",
-        help="Path to a JSON file mapping friendly names to branch names.",
+        help="Path or URL (http/https) to a JSON file mapping friendly names to branch names.",
     ),
 ):
     """
@@ -283,31 +283,44 @@ def template_create(
     - If the repository is a fork of 'cc', you can use `cc cascade` locally to auto-sync upstream base updates (like 'traefik' or 'dockhand') down into your mixed branches!
     """
     import json
+    import urllib.request
     from pathlib import Path
 
     actual_branch = template_name
-    registry_path = Path(registry_file).expanduser()
+    registry = None
 
-    if registry_path.exists():
-        try:
-            with open(registry_path, "r") as f:
-                registry = json.load(f)
+    try:
+        if registry_file.startswith("http://") or registry_file.startswith("https://"):
+            logger.debug(f"Fetching registry from URL: {registry_file}")
+            req = urllib.request.Request(
+                registry_file, headers={"User-Agent": "Mozilla/5.0"}
+            )
+            with urllib.request.urlopen(req) as response:
+                registry = json.loads(response.read().decode())
+        else:
+            registry_path = Path(registry_file).expanduser()
+            if registry_path.exists():
+                logger.debug(f"Loading registry from local file: {registry_path}")
+                with open(registry_path, "r") as f:
+                    registry = json.load(f)
+            else:
+                logger.debug(
+                    f"Registry file {registry_path} not found. Using literal branch name."
+                )
 
+        if registry:
             if template_name in registry:
                 actual_branch = registry[template_name]
                 logger.info(
-                    f"Resolved alias '{template_name}' -> branch '{actual_branch}' via {registry_path}"
+                    f"Resolved alias '{template_name}' -> branch '{actual_branch}' via {registry_file}"
                 )
             else:
                 logger.debug(
-                    f"Alias '{template_name}' not found in registry. Using as literal branch name."
+                    f"Alias '{template_name}' not found in registry. Using literal branch name."
                 )
-        except Exception as e:
-            logger.warning(f"Failed to parse registry file {registry_path}: {e}")
-    else:
-        logger.debug(
-            f"Registry file {registry_path} not found. Using literal branch name."
-        )
+
+    except Exception as e:
+        logger.warning(f"Failed to parse registry from {registry_file}: {e}")
 
     logger.info(
         f"Creating project from template branch: {actual_branch} (Repo: {repo_url})"
