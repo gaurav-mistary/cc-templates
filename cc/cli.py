@@ -273,6 +273,10 @@ def template_create(
         envvar="CC_REGISTRY",
         help="Path or URL (http/https) to a JSON file mapping friendly names to branch names.",
     ),
+    extra_args: list[str] = typer.Argument(
+        None,
+        help="Any extra arguments to pass to cookiecutter (e.g. project_slug=plane-mgmt)",
+    ),
 ):
     """
     Generate a new project from a pre-mixed template branch or alias.
@@ -331,16 +335,19 @@ def template_create(
             set(os.listdir(output_dir)) if os.path.exists(output_dir) else set()
         )
 
-        # Run cookiecutter directly wrapping their command
+        cmd = [
+            "cookiecutter",
+            repo_url,
+            "--checkout",
+            actual_branch,
+            "--output-dir",
+            output_dir,
+        ]
+        if extra_args:
+            cmd.extend(extra_args)
+
         subprocess.run(
-            [
-                "cookiecutter",
-                repo_url,
-                "--checkout",
-                actual_branch,
-                "--output-dir",
-                output_dir,
-            ],
+            cmd,
             check=True,
         )
 
