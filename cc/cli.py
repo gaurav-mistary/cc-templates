@@ -29,7 +29,7 @@ def push_git(project_dir: str, push_url: str):
             ["git", "add", "."], cwd=project_dir, check=True, capture_output=True
         )
         subprocess.run(
-            ["git", "commit", "-m", "Initial commit from cc template"],
+            ["git", "commit", "-m", "chore(auto): initial commit from cc template"],
             cwd=project_dir,
             check=True,
             capture_output=True,
