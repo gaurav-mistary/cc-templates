@@ -248,7 +248,7 @@ def mix(
 @template_app.command("create")
 def template_create(
     template_name: str = typer.Argument(
-        ..., help="The name of the template branch (e.g., traefik--dockhand)"
+        ..., help="The user-friendly alias (e.g., 'webserver') or exact branch name."
     ),
     repo_url: str = typer.Option(
         "git@github.com-personal:gaurav-mistary/templates.git",
@@ -267,17 +267,50 @@ def template_create(
         "--push-url",
         help="Optional Git remote URL to initialize and push the generated project to",
     ),
+    registry_file: str = typer.Option(
+        "~/.cc-registry.json",
+        "--registry",
+        envvar="CC_REGISTRY",
+        help="Path to a JSON file mapping friendly names to branch names.",
+    ),
 ):
     """
-    Generate a new project from a pre-mixed template branch.
+    Generate a new project from a pre-mixed template branch or alias.
 
     EXPECTED TEMPLATE STRUCTURE:
     - The repository (e.g. gaurav-mistary/templates) must contain Git branches representing templates.
     - Each branch must contain a valid Cookiecutter template at its root (meaning a cookiecutter.json and a {{cookiecutter.project_slug}} directory).
     - If the repository is a fork of 'cc', you can use `cc cascade` locally to auto-sync upstream base updates (like 'traefik' or 'dockhand') down into your mixed branches!
     """
+    import json
+    from pathlib import Path
+
+    actual_branch = template_name
+    registry_path = Path(registry_file).expanduser()
+
+    if registry_path.exists():
+        try:
+            with open(registry_path, "r") as f:
+                registry = json.load(f)
+
+            if template_name in registry:
+                actual_branch = registry[template_name]
+                logger.info(
+                    f"Resolved alias '{template_name}' -> branch '{actual_branch}' via {registry_path}"
+                )
+            else:
+                logger.debug(
+                    f"Alias '{template_name}' not found in registry. Using as literal branch name."
+                )
+        except Exception as e:
+            logger.warning(f"Failed to parse registry file {registry_path}: {e}")
+    else:
+        logger.debug(
+            f"Registry file {registry_path} not found. Using literal branch name."
+        )
+
     logger.info(
-        f"Creating project from template branch: {template_name} (Repo: {repo_url})"
+        f"Creating project from template branch: {actual_branch} (Repo: {repo_url})"
     )
 
     try:
@@ -291,7 +324,7 @@ def template_create(
                 "cookiecutter",
                 repo_url,
                 "--checkout",
-                template_name,
+                actual_branch,
                 "--output-dir",
                 output_dir,
             ],
